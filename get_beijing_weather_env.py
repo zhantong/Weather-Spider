@@ -2,6 +2,9 @@ import json
 import pymysql
 import get_weather
 import get_environment
+import logging
+
+logging.basicConfig(filename='weather_env.log', level=logging.INFO)
 
 DATABASE = 'beijing_weather'
 
@@ -53,6 +56,7 @@ class Beijing():
     def update_weather(self):
         weather = get_weather.get_real_time_weather(
             get_weather.get_station_code('北京', get_weather.get_city_list()))
+        logging.info(json.dumps(weather))
         sql = 'INSERT IGNORE INTO `weather` (`time`,`city`,`code`,`temperature`,`rain`,`info`,`feelst`,`humidity`,`rcomfort`,`airpressure`,`wind_speed`,`wind_power`,`wind_direct`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
         with self.db.cursor() as cursor:
             cursor.execute(sql, (weather['time'], weather['city'], weather['code'], weather['temperature'], weather['rain'], weather['info'], weather[
@@ -61,6 +65,7 @@ class Beijing():
 
     def update_environment(self):
         environment = get_environment.get_real_time_environment()
+        logging.info(json.dumps(environment))
         sql = 'INSERT IGNORE INTO `environment` (`time`,`station`,`priority_pollutant`,`pollutant`,`value`,`iaqi`,`qlevel`,`quality`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)'
         with self.db.cursor() as cursor:
             for item in environment['pollutants']:
