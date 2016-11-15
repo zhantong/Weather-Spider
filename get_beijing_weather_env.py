@@ -78,6 +78,7 @@ class Beijing():
             %(wind_speed)s,%(wind_power)s,%(wind_direct)s
             )'''
         try:
+            self.notify_prev_day(weather['time'], 'weather')
             with self.db.cursor() as cursor:
                 cursor.execute(sql, weather)
         except Exception as e:
@@ -97,6 +98,7 @@ class Beijing():
             %s,%s,%s,%s,%s,%s,%s,%s
             )'''
         try:
+            self.notify_prev_day(environment['time'], 'environment')
             with self.db.cursor() as cursor:
                 for item in environment['pollutants']:
                     cursor.execute(sql, (environment['time'], environment['station'], environment['priority_pollutant'], item['pollutant'], item[
@@ -104,6 +106,22 @@ class Beijing():
         except Exception as e:
             send_mail('天气抓取出错', str(e), 'zhantong1994@163.com')
         self.db.commit()
+
+    def notify_prev_day(self, today, table):
+        sql_check = 'SELECT * FROM `%s` WHERE DATE(`time`) = DATE(%%s)' % (
+            table,)
+        sql_prev_day = 'SELECT * FROM `%s` WHERE DATE(`time`) = DATE(%%s) - INTERVAL 1 DAY' % (
+            table,)
+        result = None
+        with self.db.cursor() as cursor:
+            rows_count = cursor.execute(sql_check, (today,))
+            if rows_count == 0:
+                cursor.execute(sql_prev_day, (today,))
+                rows = cursor.fetchall()
+                if rows:
+                    result = dict_to_table(rows)
+                    send_mail(today + '前一天' + table + '采集情况',
+                              result, 'zhantong1994@163.com')
 
     def db_connect(self, database):
         user, password = None, None
@@ -133,17 +151,33 @@ def send_mail(subject, text, send_to):
     with open(account_password_file, 'r', encoding='utf-8') as f:
         content = json.loads(f.read())
         account, password = content['account'], content['password']
-        msg = MIMEText(text)
-        msg['Subject'] = subject
-        msg['From'] = account
-        msg['To'] = send_to
-        s = smtplib.SMTP(host='smtp.163.com')
-        s.ehlo()
-        s.starttls()
-        s.ehlo()
-        s.login(account, password)
-        s.send_message(msg)
-        s.quit()
+    msg = MIMEText(text)
+    msg['Subject'] = subject
+    msg['From'] = account
+    msg['To'] = send_to
+    s = smtplib.SMTP(host='smtp.163.com')
+    s.ehlo()
+    s.starttls()
+    s.ehlo()
+    s.login(account, password)
+    s.send_message(msg)
+    s.quit()
+
+
+def dict_to_table(the_dict):
+    head_list = list(the_dict[0].keys())
+    table_list = [head_list]
+    for item in the_dict:
+        table_list.append([str(item[key] or '') for key in head_list])
+    cell_widths = [max(map(len, cell)) for cell in zip(*table_list)]
+    str_format = ' | '.join(['{{:<{}}}'.format(width)
+                             for width in cell_widths])
+    table_list.insert(1, ['-' * width for width in cell_widths])
+    table = ''
+    for item in table_list:
+        table += str_format.format(*item)
+        table += '\n'
+    return table
 if __name__ == '__main__':
     beijing = Beijing()
     beijing.init_db()
