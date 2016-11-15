@@ -19,7 +19,9 @@ class Beijing():
         self.db_disconnect()
 
     def init_db(self):
-        sql_create_weather_table = '''CREATE TABLE IF NOT EXISTS `weather` (
+        sql_create_weather_table = '''CREATE TABLE IF NOT EXISTS
+            `weather`
+            (
             `time` DATETIME NOT NULL,
             `city` VARCHAR(10) NOT NULL,
             `code` VARCHAR(10) NOT NULL,
@@ -34,8 +36,11 @@ class Beijing():
             `wind_power` VARCHAR(10) NOT NULL,
             `wind_direct` VARCHAR(10) NOT NULL,
             PRIMARY KEY (`time`, `city`)
-            )'''
-        sql_create_environment_table = '''CREATE TABLE IF NOT EXISTS `environment` (
+            )
+            '''
+        sql_create_environment_table = '''CREATE TABLE IF NOT EXISTS
+            `environment`
+            (
             `time` DATETIME NOT NULL,
             `station` VARCHAR(10) NOT NULL,
             `priority_pollutant` VARCHAR(10) NOT NULL,
@@ -45,7 +50,8 @@ class Beijing():
             `qlevel` VARCHAR(10) NOT NULL,
             `quality`  VARCHAR(10) NOT NULL,
             PRIMARY KEY (`time`, `station`, `pollutant`)
-        )'''
+            )
+            '''
         with self.db.cursor() as cursor:
             cursor.execute(sql_create_weather_table)
             cursor.fetchall()
@@ -57,20 +63,41 @@ class Beijing():
         weather = get_weather.get_real_time_weather(
             get_weather.get_station_code('北京', get_weather.get_city_list()))
         logging.info(json.dumps(weather))
-        sql = 'INSERT IGNORE INTO `weather` (`time`,`city`,`code`,`temperature`,`rain`,`info`,`feelst`,`humidity`,`rcomfort`,`airpressure`,`wind_speed`,`wind_power`,`wind_direct`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+        sql = '''INSERT IGNORE INTO `weather`
+            (
+            `time`,`city`,`code`,`temperature`,`rain`,`info`,`feelst`,
+            `humidity`,`rcomfort`,`airpressure`,`wind_speed`,
+            `wind_power`,`wind_direct`
+            )
+            VALUES
+            (
+            %(time)s,%(city)s,%(code)s,%(temperature)s,%(rain)s,%(info)s,
+            %(feelst)s,%(humidity)s,%(rcomfort)s,%(airpressure)s,
+            %(wind_speed)s,%(wind_power)s,%(wind_direct)s
+            )'''
         with self.db.cursor() as cursor:
-            cursor.execute(sql, (weather['time'], weather['city'], weather['code'], weather['temperature'], weather['rain'], weather['info'], weather[
-                           'feelst'], weather['humidity'], weather['rcomfort'], weather['airpressure'], weather['wind_speed'], weather['wind_power'], weather['wind_direct']))
+            cursor.execute(sql, weather)
         self.db.commit()
 
     def update_environment(self):
         environment = get_environment.get_real_time_environment()
         logging.info(json.dumps(environment))
-        sql = 'INSERT IGNORE INTO `environment` (`time`,`station`,`priority_pollutant`,`pollutant`,`value`,`iaqi`,`qlevel`,`quality`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)'
+        sql = '''INSERT IGNORE INTO `environment`
+            (
+            `time`,`station`,`priority_pollutant`,`pollutant`,
+            `value`,`iaqi`,`qlevel`,`quality`
+            )
+            VALUES
+            (
+            %s,%s,%s,%s,%s,%s,%s,%s
+            )'''
+        time = environment['time']
+        station = environment['station']
+        priority_pollutant = environment['priority_pollutant']
         with self.db.cursor() as cursor:
             for item in environment['pollutants']:
-                cursor.execute(sql, (environment['time'], environment['station'], environment[
-                               'priority_pollutant'], item['pollutant'], item['value'], item['iaqi'], item['qlevel'], item['quality']))
+                cursor.execute(sql, (time, station, priority_pollutant, item['pollutant'], item[
+                               'value'], item['iaqi'], item['qlevel'], item['quality']))
         self.db.commit()
 
     def db_connect(self, database):
