@@ -3,6 +3,8 @@ import pymysql
 import get_weather
 import get_environment
 import logging
+from email.mime.text import MIMEText
+import smtplib
 
 logging.basicConfig(filename='weather_env.log', level=logging.INFO)
 
@@ -75,8 +77,11 @@ class Beijing():
             %(feelst)s,%(humidity)s,%(rcomfort)s,%(airpressure)s,
             %(wind_speed)s,%(wind_power)s,%(wind_direct)s
             )'''
-        with self.db.cursor() as cursor:
-            cursor.execute(sql, weather)
+        try:
+            with self.db.cursor() as cursor:
+                cursor.execute(sql, weather)
+        except Exception as e:
+            send_mail('天气抓取出错', str(e), 'zhantong1994@163.com')
         self.db.commit()
 
     def update_environment(self):
@@ -91,13 +96,13 @@ class Beijing():
             (
             %s,%s,%s,%s,%s,%s,%s,%s
             )'''
-        time = environment['time']
-        station = environment['station']
-        priority_pollutant = environment['priority_pollutant']
-        with self.db.cursor() as cursor:
-            for item in environment['pollutants']:
-                cursor.execute(sql, (time, station, priority_pollutant, item['pollutant'], item[
-                               'value'], item['iaqi'], item['qlevel'], item['quality']))
+        try:
+            with self.db.cursor() as cursor:
+                for item in environment['pollutants']:
+                    cursor.execute(sql, (environment['time'], environment['station'], environment['priority_pollutant'], item['pollutant'], item[
+                                   'value'], item['iaqi'], item['qlevel'], item['quality']))
+        except Exception as e:
+            send_mail('天气抓取出错', str(e), 'zhantong1994@163.com')
         self.db.commit()
 
     def db_connect(self, database):
@@ -120,6 +125,25 @@ class Beijing():
     def db_disconnect(self):
         if not self.db is None:
             self.db.close()
+
+
+def send_mail(subject, text, send_to):
+    account_password_file = 'email_account_password.json'
+    account, password = None, None
+    with open(account_password_file, 'r', encoding='utf-8') as f:
+        content = json.loads(f.read())
+        account, password = content['account'], content['password']
+        msg = MIMEText(text)
+        msg['Subject'] = subject
+        msg['From'] = account
+        msg['To'] = send_to
+        s = smtplib.SMTP(host='smtp.163.com')
+        s.ehlo()
+        s.starttls()
+        s.ehlo()
+        s.login(account, password)
+        s.send_message(msg)
+        s.quit()
 if __name__ == '__main__':
     beijing = Beijing()
     beijing.init_db()
