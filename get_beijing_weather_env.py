@@ -45,12 +45,11 @@ class Beijing():
             (
             `time` DATETIME NOT NULL,
             `station` VARCHAR(10) NOT NULL,
-            `priority_pollutant` VARCHAR(10) NOT NULL,
+            `priority_pollutant` VARCHAR(10),
             `pollutant` VARCHAR(10) NOT NULL,
-            `value` VARCHAR(10) NOT NULL,
-            `iaqi` VARCHAR(10) NOT NULL,
-            `qlevel` VARCHAR(10) NOT NULL,
-            `quality`  VARCHAR(10) NOT NULL,
+            `value` VARCHAR(10),
+            `iaqi` VARCHAR(10),
+            `qlevel` VARCHAR(10),
             PRIMARY KEY (`time`, `station`, `pollutant`)
             )
             '''
@@ -91,18 +90,18 @@ class Beijing():
         sql = '''INSERT IGNORE INTO `environment`
             (
             `time`,`station`,`priority_pollutant`,`pollutant`,
-            `value`,`iaqi`,`qlevel`,`quality`
+            `value`,`iaqi`,`qlevel`
             )
             VALUES
             (
-            %s,%s,%s,%s,%s,%s,%s,%s
+            %s,%s,%s,%s,%s,%s,%s
             )'''
         try:
             self.notify_prev_day(environment['time'], 'environment')
             with self.db.cursor() as cursor:
                 for item in environment['pollutants']:
                     cursor.execute(sql, (environment['time'], environment['station'], environment['priority_pollutant'], item['pollutant'], item[
-                                   'value'], item['iaqi'], item['qlevel'], item['quality']))
+                                   'value'], item['iaqi'], item['qlevel']))
         except Exception as e:
             send_mail('天气抓取出错', str(e), 'zhantong1994@163.com')
         self.db.commit()
