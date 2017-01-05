@@ -12,7 +12,6 @@ DATABASE = 'beijing_weather'
 
 
 class Beijing():
-
     def __init__(self):
         self.db = None
         self.db = self.db_connect(DATABASE)
@@ -100,8 +99,10 @@ class Beijing():
             self.notify_prev_day(environment['time'], 'environment')
             with self.db.cursor() as cursor:
                 for item in environment['pollutants']:
-                    cursor.execute(sql, (environment['time'], environment['station'], environment['priority_pollutant'], item['pollutant'], item[
-                                   'value'], item['iaqi'], item['qlevel']))
+                    cursor.execute(sql, (
+                    environment['time'], environment['station'], environment['priority_pollutant'], item['pollutant'],
+                    item[
+                        'value'], item['iaqi'], item['qlevel']))
         except Exception as e:
             send_mail('天气抓取出错', str(e), 'zhantong1994@163.com')
         self.db.commit()
@@ -177,6 +178,8 @@ def dict_to_table(the_dict):
         table += str_format.format(*item)
         table += '\n'
     return table
+
+
 if __name__ == '__main__':
     beijing = Beijing()
     beijing.init_db()

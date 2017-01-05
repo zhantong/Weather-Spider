@@ -44,6 +44,7 @@ def get_real_time_weather(station_code):
     }
     return result
 
+
 if __name__ == '__main__':
     station_code = get_station_code('北京', get_city_list())
     print(get_real_time_weather(station_code))

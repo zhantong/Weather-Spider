@@ -98,6 +98,7 @@ def get_real_time_environment():
     }
     return result
 
+
 if __name__ == '__main__':
     result = get_real_time_environment()
     print(result)
